@@ -68,7 +68,37 @@ class Scheduler{
 		}
 	}
 
+	static void calcAnalytics(ArrayList<Process> doneQ){
+		int totalWaitTime=0;
+		int totalResponceTime =0;
+		int totalWeightedWaitTime =0;
+		int totalWeightedResponceTime =0;
+		int totalPriority =0;
+		for(int i=0; i<doneQ.size(); i++){
+			int waitTime = doneQ.get(i).finishTime - doneQ.get(i).arrival_time - doneQ.get(i).runTime;  //time finish - time start = runtime + waittime
+			totalWaitTime = totalWaitTime + waitTime;
+			totalWeightedWaitTime = totalWeightedWaitTime + (waitTime * doneQ.get(i).priority);
+			totalResponceTime = totalResponceTime + doneQ.get(i).responceTime;
+			totalWeightedResponceTime = totalWeightedResponceTime + (doneQ.get(i).responceTime * doneQ.get(i).priority);
+			totalPriority = totalPriority + doneQ.get(i).priority;
+
+		}
+		double avgWaitTime = totalWaitTime/doneQ.size();
+		double avgResponceTime = totalResponceTime/doneQ.size();
+		double avgWeightedWaitTime = totalWeightedWaitTime/totalPriority;
+		double avgWeightedResponceTime = totalWeightedResponceTime/totalPriority;
+
+		System.out.println("The average waiting time is: " + avgWaitTime);
+		System.out.println("The average weighted waiting time is: " + avgWeightedWaitTime);
+		System.out.println("The average responce time is: " + avgResponceTime);
+		System.out.println("The average weighted responce time is: " + avgWeightedResponceTime);
+
+
+
+	}
+
 	void fcfs(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
+		ArrayList<Process> done = new ArrayList<Process>(); //need this to check analytics
 		Process running[] = new Process(1); 
 		int numProcesses = waitingQ.size;
 		int totalWaitTime = 0;
@@ -85,16 +115,21 @@ class Scheduler{
 			if(running[0]==null){
 				//if so add the first element of readyQ to running;
 				running[0] = readyQ.get(0);
+				if(running[0].responceTime == -1) //hasnt been set yet (first time running)
+					running[0].responceTime = time;
 				readyQ.remove(0);//remove that element from readyQ
 			}
 			//else check if runningQ[0].burst_time == 0
 			else if(running[0].burst_time == 0){
 				//in this case whatever was running just finished
 				//if there is something left to run
+				running[0].finishTime = time; //set the finish time of the process to now
 				if(readyQ.get(0)!=null){
+					doneQ.add(running[0]); //process finished, and to doneQ
 					running[0]= readyQ.get(0);
 				}
 				else{ //there is nothing more to run right now
+					doneQ.add(running[0]); //process finished, and to doneQ
 					running[0]=null;
 				}
 			}
@@ -105,9 +140,9 @@ class Scheduler{
 				System.out.println("Currently running process "+ running[0].pid +".  Time: "+time);
 			}
 			time++;
-			totalWaitTime = totalWaitTime + readyQ.size(); //gain one sec for each process waiting per second
+			
 		}
-		double avgWait = totalWaitTime/numProcesses;
+		calcAnalytics(doneQ);
 		//need stuff for calculating weighted wait time (responce time will be the same as wait time)  Print them here
 	}
 
