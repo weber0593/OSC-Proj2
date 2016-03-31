@@ -127,6 +127,9 @@ class Scheduler{
 				if(readyQ.get(0)!=null){
 					doneQ.add(running[0]); //process finished, add to doneQ
 					running[0]= readyQ.get(0);
+					if(running[0].responceTime == -1) //if responce time hasnt been set yet (first time running)
+						running[0].responceTime = time;
+					readyQ.remove(0);//remove that element from readyQ
 				}
 				//there is nothing more to run right now
 				else{ 
@@ -151,7 +154,78 @@ class Scheduler{
 	}
 
 	void sjf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
+		//main execution loop for sjf
+		while(waitingQ.size() != 0 && readyQ.size() != 0 && running[0]!=null){ //loop until there is nothing in waiting, ready, or running
+			
+			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
+			for(int i=0; i<numProcesses; i++){
+				if(waitingQ(i).arrival_time == time){
+					readyQ.add(waitingQ(i));
+				}
+			}
 
+			//if nothing in running, add shortest job in ready
+			if(running[0]==null){
+				
+				//get job with shortest time
+				int shortestTime = readyQ.get(0).burst_time;
+				int index = 0;
+				for(int i =0; i<readyQ.size(); i++){
+					if(readyQ.get(i).burst_time < shortestTime){
+						shortestTime = readyQ.get(i).burst_time;
+						index = i;
+					}
+				}
+				running[0]=readyQ.get(index);
+				if(running[0].responceTime == -1) //if responce time hasnt been set yet (first time running)
+					running[0].responceTime = time;
+				readyQ.remove(index); //remove that element from readyQ
+			}
+
+			//else check if process in runnning is done
+			else if(running[0].burst_time == 0){
+				//in this case whatever was running just finished
+				running[0].finishTime = time; //set the finish time of the process to now
+				//if there is something left to run
+				if(readyQ.get(0)!=null){
+					doneQ.add(running[0]); //process finished, add to doneQ
+					
+					//add shortest job
+					int shortestTime = readyQ.get(0).burst_time;
+					int index = 0;
+					for(int i =0; i<readyQ.size(); i++){
+						if(readyQ.get(i).burst_time < shortestTime){
+							shortestTime = readyQ.get(i).burst_time;
+							index = i;
+						}
+					}
+					running[0]=readyQ.get(index);
+					if(running[0].responceTime == -1) //if responce time hasnt been set yet (first time running)
+						running[0].responceTime = time;
+					readyQ.remove(0);//remove that element from readyQ
+				}
+
+				//there is nothing more to run right now
+				else{ 
+					doneQ.add(running[0]); //process finished, add to doneQ
+					running[0]=null;
+				}
+			}
+
+			//else something is running and not done
+			else{
+				running[0].burst_time--;
+			}
+
+			//print status on whats running
+			if(running[0]!=null){
+				System.out.println("Currently running process: "+ running[0].pid +".  Time: "+time);
+			}
+
+			time++;
+		}
+
+		calcAnalytics(doneQ);
 	}
 
 	void srtf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
