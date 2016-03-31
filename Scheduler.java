@@ -7,7 +7,7 @@ class Scheduler{
 	public static void main(String args[]){
 		ArrayList<Process> waitingQ = new ArrayList<Process>(); //Processes that havent arrived
 		ArrayList<Process> readyQ = new ArrayList<Process>(); //Processes that are ready to run
-		Process[] running = new Process[1]; //Process that is currently running
+		Process running; //Process that is currently running
 		ArrayList<Process> doneQ = new ArrayList<Process>(); //need this to do analytics
 
 		int time = 0;
@@ -21,10 +21,10 @@ class Scheduler{
 		String algorithm = args[0];
 		switch(algorithm){
 			case "fcfs":
-				fcfs(time, readyQ, waitingQ);
+				fcfs(time, readyQ, waitingQ, doneQ);
 				break;
 			case "sjf":
-				sjf(time, readyQ, waitingQ);
+				sjf(time, readyQ, waitingQ, doneQ);
 				break;
 			case "srtf":
 				srtf(time, readyQ, waitingQ);
@@ -74,34 +74,34 @@ class Scheduler{
 
 	static void calcAnalytics(ArrayList<Process> doneQ){
 		int totalWaitTime=0;
-		int totalResponceTime =0;
+		int totalresponseTime =0;
 		int totalWeightedWaitTime =0;
-		int totalWeightedResponceTime =0;
+		int totalWeightedresponseTime =0;
 		int totalPriority =0;
 		
 		for(int i=0; i<doneQ.size(); i++){
 			int waitTime = doneQ.get(i).finishTime - doneQ.get(i).arrival_time - doneQ.get(i).runTime;  //time finish - time start = runtime + waittime
 			totalWaitTime = totalWaitTime + waitTime;
 			totalWeightedWaitTime = totalWeightedWaitTime + (waitTime * doneQ.get(i).priority);
-			totalResponceTime = totalResponceTime + doneQ.get(i).responceTime;
-			totalWeightedResponceTime = totalWeightedResponceTime + (doneQ.get(i).responceTime * doneQ.get(i).priority);
+			totalresponseTime = totalresponseTime + doneQ.get(i).responseTime;
+			totalWeightedresponseTime = totalWeightedresponseTime + (doneQ.get(i).responseTime * doneQ.get(i).priority);
 			totalPriority = totalPriority + doneQ.get(i).priority;
 		}
 
 		double avgWaitTime = totalWaitTime/doneQ.size();
-		double avgResponceTime = totalResponceTime/doneQ.size();
+		double avgresponseTime = totalresponseTime/doneQ.size();
 		double avgWeightedWaitTime = totalWeightedWaitTime/totalPriority;
-		double avgWeightedResponceTime = totalWeightedResponceTime/totalPriority;
+		double avgWeightedresponseTime = totalWeightedresponseTime/totalPriority;
 
 		System.out.println("The average waiting time is: " + avgWaitTime);
 		System.out.println("The average weighted waiting time is: " + avgWeightedWaitTime);
-		System.out.println("The average responce time is: " + avgResponceTime);
-		System.out.println("The average weighted responce time is: " + avgWeightedResponceTime);
+		System.out.println("The average response time is: " + avgresponseTime);
+		System.out.println("The average weighted response time is: " + avgWeightedresponseTime);
 	}
 
-	void fcfs(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
+	void fcfs(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ){
 		//main execution loop for fcfs
-		while(waitingQ.size() != 0 && readyQ.size() != 0 && running[0]!=null){ //loop until there is nothing in waiting, ready, or running
+		while(waitingQ.size() != 0 && readyQ.size() != 0 && running!=null){ //loop until there is nothing in waiting, ready, or running
 			
 			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
 			for(int i=0; i<numProcesses; i++){
@@ -111,40 +111,40 @@ class Scheduler{
 			}
 
 			//check if running is empty
-			if(running[0]==null){
+			if(running==null){
 				//if so add the first element of readyQ to running;
-				running[0] = readyQ.get(0);
-				if(running[0].responceTime == -1) //if responce time hasnt been set yet (first time running)
-					running[0].responceTime = time;
+				running = readyQ.get(0);
+				if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+					running.responseTime = time;
 				readyQ.remove(0);//remove that element from readyQ
 			}
 
 			//else check if process in runnning is done
-			else if(running[0].burst_time == 0){
+			else if(running.burst_time == 0){
 				//in this case whatever was running just finished
-				running[0].finishTime = time; //set the finish time of the process to now
+				running.finishTime = time; //set the finish time of the process to now
 				//if there is something left to run
 				if(readyQ.get(0)!=null){
-					doneQ.add(running[0]); //process finished, add to doneQ
-					running[0]= readyQ.get(0);
-					if(running[0].responceTime == -1) //if responce time hasnt been set yet (first time running)
-						running[0].responceTime = time;
+					doneQ.add(running); //process finished, add to doneQ
+					running= readyQ.get(0);
+					if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+						running.responseTime = time;
 					readyQ.remove(0);//remove that element from readyQ
 				}
 				//there is nothing more to run right now
 				else{ 
-					doneQ.add(running[0]); //process finished, add to doneQ
-					running[0]=null;
+					doneQ.add(running); //process finished, add to doneQ
+					running=null;
 				}
 			}
 
 			//if something is still running
 			else{ 
-				running[0].burst_time--; //take one more second off time remaining
+				running.burst_time--; //take one more second off time remaining
 			}
 
-			if(running[0]!=null){
-				System.out.println("Currently running process: "+ running[0].pid +".  Time: "+time);
+			if(running!=null){
+				System.out.println("Currently running process: "+ running.pid +".  Time: "+time);
 			}
 
 			time++; //increment time
@@ -153,9 +153,9 @@ class Scheduler{
 		calcAnalytics(doneQ);
 	}
 
-	void sjf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
+	void sjf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ){
 		//main execution loop for sjf
-		while(waitingQ.size() != 0 && readyQ.size() != 0 && running[0]!=null){ //loop until there is nothing in waiting, ready, or running
+		while(waitingQ.size() != 0 && readyQ.size() != 0 && running!=null){ //loop until there is nothing in waiting, ready, or running
 			
 			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
 			for(int i=0; i<numProcesses; i++){
@@ -165,7 +165,7 @@ class Scheduler{
 			}
 
 			//if nothing in running, add shortest job in ready
-			if(running[0]==null){
+			if(running==null){
 				
 				//get job with shortest time
 				int shortestTime = readyQ.get(0).burst_time;
@@ -176,19 +176,19 @@ class Scheduler{
 						index = i;
 					}
 				}
-				running[0]=readyQ.get(index);
-				if(running[0].responceTime == -1) //if responce time hasnt been set yet (first time running)
-					running[0].responceTime = time;
+				running=readyQ.get(index);
+				if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+					running.responseTime = time;
 				readyQ.remove(index); //remove that element from readyQ
 			}
 
 			//else check if process in runnning is done
-			else if(running[0].burst_time == 0){
+			else if(running.burst_time == 0){
 				//in this case whatever was running just finished
-				running[0].finishTime = time; //set the finish time of the process to now
+				running.finishTime = time; //set the finish time of the process to now
 				//if there is something left to run
 				if(readyQ.get(0)!=null){
-					doneQ.add(running[0]); //process finished, add to doneQ
+					doneQ.add(running); //process finished, add to doneQ
 					
 					//add shortest job
 					int shortestTime = readyQ.get(0).burst_time;
@@ -199,27 +199,27 @@ class Scheduler{
 							index = i;
 						}
 					}
-					running[0]=readyQ.get(index);
-					if(running[0].responceTime == -1) //if responce time hasnt been set yet (first time running)
-						running[0].responceTime = time;
+					running=readyQ.get(index);
+					if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+						running.responseTime = time;
 					readyQ.remove(0);//remove that element from readyQ
 				}
 
 				//there is nothing more to run right now
 				else{ 
-					doneQ.add(running[0]); //process finished, add to doneQ
-					running[0]=null;
+					doneQ.add(running); //process finished, add to doneQ
+					running=null;
 				}
 			}
 
 			//else something is running and not done
 			else{
-				running[0].burst_time--;
+				running.burst_time--;
 			}
 
 			//print status on whats running
-			if(running[0]!=null){
-				System.out.println("Currently running process: "+ running[0].pid +".  Time: "+time);
+			if(running!=null){
+				System.out.println("Currently running process: "+ running.pid +".  Time: "+time);
 			}
 
 			time++;
