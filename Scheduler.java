@@ -72,18 +72,18 @@ class Scheduler{
 	}
 
 	static void calcAnalytics(ArrayList<Process> doneQ){
-		int totalWaitTime=0;
-		int totalresponseTime =0;
-		int totalWeightedWaitTime =0;
-		int totalWeightedresponseTime =0;
-		int totalPriority =0;
+		double totalWaitTime=0;
+		double totalresponseTime =0;
+		double totalWeightedWaitTime =0;
+		double totalWeightedresponseTime =0;
+		double totalPriority =0;
 		
 		for(int i=0; i<doneQ.size(); i++){
-			int waitTime = doneQ.get(i).finishTime - doneQ.get(i).arrival_time - doneQ.get(i).runTime;  //time finish - time start = runtime + waittime
+			double waitTime = doneQ.get(i).finishTime - doneQ.get(i).arrival_time - doneQ.get(i).runTime;  //time finish - time start = runtime + waittime
 			totalWaitTime = totalWaitTime + waitTime;
 			totalWeightedWaitTime = totalWeightedWaitTime + (waitTime * doneQ.get(i).priority);
-			totalresponseTime = totalresponseTime + doneQ.get(i).responseTime;
-			totalWeightedresponseTime = totalWeightedresponseTime + (doneQ.get(i).responseTime * doneQ.get(i).priority);
+			totalresponseTime = totalresponseTime + doneQ.get(i).responseTime - doneQ.get(i).arrival_time;
+			totalWeightedresponseTime = totalWeightedresponseTime + ((doneQ.get(i).responseTime - doneQ.get(i).arrival_time)* doneQ.get(i).priority);
 			totalPriority = totalPriority + doneQ.get(i).priority;
 		}
 
@@ -100,12 +100,18 @@ class Scheduler{
 
 	static void fcfs(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
 		//main execution loop for fcfs
-		while(waitingQ.size() != 0 && readyQ.size() != 0 && running!=null){ //loop until there is nothing in waiting, ready, or running
-			
+		
+		while(waitingQ.size() != 0 || readyQ.size() != 0 || running!=null){ //loop until there is nothing in waiting, ready, or running
 			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
-			for(int i=0; i<waitingQ.size(); i++){
+			int i=0;
+			while(i<waitingQ.size()){
 				if(waitingQ.get(i).arrival_time == time){
 					readyQ.add(waitingQ.get(i));
+					waitingQ.remove(i);
+					
+				}
+				else{
+					i++;
 				}
 			}
 
@@ -123,7 +129,7 @@ class Scheduler{
 				//in this case whatever was running just finished
 				running.finishTime = time; //set the finish time of the process to now
 				//if there is something left to run
-				if(readyQ.get(0)!=null){
+				if(!readyQ.isEmpty()){
 					doneQ.add(running); //process finished, add to doneQ
 					running= readyQ.get(0);
 					if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
@@ -138,11 +144,8 @@ class Scheduler{
 			}
 
 			//if something is still running
-			else{ 
+			if(running!=null){ 
 				running.burst_time--; //take one more second off time remaining
-			}
-
-			if(running!=null){
 				System.out.println("Currently running process: "+ running.pid +".  Time: "+time);
 			}
 
@@ -154,12 +157,18 @@ class Scheduler{
 
 	static void sjf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
 		//main execution loop for sjf
-		while(waitingQ.size() != 0 && readyQ.size() != 0 && running!=null){ //loop until there is nothing in waiting, ready, or running
+		while(waitingQ.size() != 0 || readyQ.size() != 0 || running!=null){ //loop until there is nothing in waiting, ready, or running
 			
 			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
-			for(int i=0; i<waitingQ.size(); i++){
+			int i=0;
+			while(i<waitingQ.size()){
 				if(waitingQ.get(i).arrival_time == time){
 					readyQ.add(waitingQ.get(i));
+					waitingQ.remove(i);
+					
+				}
+				else{
+					i++;
 				}
 			}
 
@@ -169,10 +178,10 @@ class Scheduler{
 				//get job with shortest time
 				int shortestTime = readyQ.get(0).burst_time;
 				int index = 0;
-				for(int i =0; i<readyQ.size(); i++){
-					if(readyQ.get(i).burst_time < shortestTime){
-						shortestTime = readyQ.get(i).burst_time;
-						index = i;
+				for(int j =0; j<readyQ.size(); j++){
+					if(readyQ.get(j).burst_time < shortestTime){
+						shortestTime = readyQ.get(j).burst_time;
+						index = j;
 					}
 				}
 				running=readyQ.get(index);
@@ -186,16 +195,16 @@ class Scheduler{
 				//in this case whatever was running just finished
 				running.finishTime = time; //set the finish time of the process to now
 				//if there is something left to run
-				if(readyQ.get(0)!=null){
+				if(!readyQ.isEmpty()){
 					doneQ.add(running); //process finished, add to doneQ
 					
 					//add shortest job
 					int shortestTime = readyQ.get(0).burst_time;
 					int index = 0;
-					for(int i =0; i<readyQ.size(); i++){
-						if(readyQ.get(i).burst_time < shortestTime){
-							shortestTime = readyQ.get(i).burst_time;
-							index = i;
+					for(int j =0; j<readyQ.size(); j++){
+						if(readyQ.get(j).burst_time < shortestTime){
+							shortestTime = readyQ.get(j).burst_time;
+							index = j;
 						}
 					}
 					running=readyQ.get(index);
@@ -229,16 +238,22 @@ class Scheduler{
 
 	static void srtf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
 		//main execution loop for srtf
-		while(waitingQ.size() != 0 && readyQ.size() != 0 && running!=null){ //loop until there is nothing in waiting, ready, or running
+		while(waitingQ.size() != 0 || readyQ.size() != 0 || running!=null){ //loop until there is nothing in waiting, ready, or running
 			boolean flag = false;
 			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
-			for(int i=0; i<waitingQ.size(); i++){
-				if(waitingQ.get(i).arrival_time == time){
-					readyQ.add(waitingQ.get(i));
-					if(running != null) //if there is a new job with shorter time remaining than what is in running
-						if(waitingQ.get(i).burst_time < running.burst_time){
+			int j=0;
+			while(j<waitingQ.size()){
+				if(waitingQ.get(j).arrival_time == time){
+					readyQ.add(waitingQ.get(j));
+					if(running != null){ //if there is a new job with shorter time remaining than what is in running
+						if(waitingQ.get(j).burst_time < running.burst_time){
 							flag = true; //trigger replacement flag
 						}
+					}
+					waitingQ.remove(j);
+				}
+				else{
+					j++;
 				}
 			}
 
@@ -283,7 +298,7 @@ class Scheduler{
 				//in this case whatever was running just finished
 				running.finishTime = time; //set the finish time of the process to now
 				//if there is something left to run
-				if(readyQ.get(0)!=null){
+				if(!readyQ.isEmpty()){
 					doneQ.add(running); //process finished, add to doneQ
 					
 					//add shortest job
