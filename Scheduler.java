@@ -7,11 +7,10 @@ class Scheduler{
 	public static void main(String args[]){
 		ArrayList<Process> waitingQ = new ArrayList<Process>(); //Processes that havent arrived
 		ArrayList<Process> readyQ = new ArrayList<Process>(); //Processes that are ready to run
-		Process running; //Process that is currently running
+		Process running = null; //Process that is currently running
 		ArrayList<Process> doneQ = new ArrayList<Process>(); //need this to do analytics
 
 		int time = 0;
-		int numProcesses = waitingQ.size();
 
 		//determine what file to read from
 		File input = new File(args[1]);
@@ -21,25 +20,25 @@ class Scheduler{
 		String algorithm = args[0];
 		switch(algorithm){
 			case "fcfs":
-				fcfs(time, readyQ, waitingQ, doneQ);
+				fcfs(time, readyQ, waitingQ, doneQ, running);
 				break;
 			case "sjf":
-				sjf(time, readyQ, waitingQ, doneQ);
+				sjf(time, readyQ, waitingQ, doneQ, running);
 				break;
 			case "srtf":
-				srtf(time, readyQ, waitingQ);
+				srtf(time, readyQ, waitingQ, doneQ, running);
 				break;
 			case "nonpreprior":
-				nonpreprior(time, readyQ, waitingQ);
+				nonpreprior(time, readyQ, waitingQ, doneQ, running);
 				break;
 			case "preprior":
-				preprior(time, readyQ, waitingQ);
+				preprior(time, readyQ, waitingQ, doneQ, running);
 				break;
 			case "rr":
-				rr(time, readyQ, waitingQ);
+				rr(time, readyQ, waitingQ, doneQ, running);
 				break;
 			case "custom":
-				custom(time, readyQ, waitingQ);
+				custom(time, readyQ, waitingQ, doneQ, running);
 				break;
 			default:
 				System.out.println("Invalid algorithm type");
@@ -99,14 +98,14 @@ class Scheduler{
 		System.out.println("The average weighted response time is: " + avgWeightedresponseTime);
 	}
 
-	void fcfs(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ){
+	static void fcfs(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
 		//main execution loop for fcfs
 		while(waitingQ.size() != 0 && readyQ.size() != 0 && running!=null){ //loop until there is nothing in waiting, ready, or running
 			
 			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
-			for(int i=0; i<numProcesses; i++){
-				if(waitingQ(i).arrival_time == time){
-					readyQ.add(waitingQ(i));
+			for(int i=0; i<waitingQ.size(); i++){
+				if(waitingQ.get(i).arrival_time == time){
+					readyQ.add(waitingQ.get(i));
 				}
 			}
 
@@ -153,14 +152,14 @@ class Scheduler{
 		calcAnalytics(doneQ);
 	}
 
-	void sjf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ){
+	static void sjf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
 		//main execution loop for sjf
 		while(waitingQ.size() != 0 && readyQ.size() != 0 && running!=null){ //loop until there is nothing in waiting, ready, or running
 			
 			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
-			for(int i=0; i<numProcesses; i++){
-				if(waitingQ(i).arrival_time == time){
-					readyQ.add(waitingQ(i));
+			for(int i=0; i<waitingQ.size(); i++){
+				if(waitingQ.get(i).arrival_time == time){
+					readyQ.add(waitingQ.get(i));
 				}
 			}
 
@@ -228,16 +227,16 @@ class Scheduler{
 		calcAnalytics(doneQ);
 	}
 
-	void srtf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ){
+	static void srtf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
 		//main execution loop for srtf
 		while(waitingQ.size() != 0 && readyQ.size() != 0 && running!=null){ //loop until there is nothing in waiting, ready, or running
 			boolean flag = false;
 			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
-			for(int i=0; i<numProcesses; i++){
+			for(int i=0; i<waitingQ.size(); i++){
 				if(waitingQ.get(i).arrival_time == time){
 					readyQ.add(waitingQ.get(i));
 					if(running != null) //if there is a new job with shorter time remaining than what is in running
-						if(waitingQ(i).burst_time < running.burst_time){
+						if(waitingQ.get(i).burst_time < running.burst_time){
 							flag = true; //trigger replacement flag
 						}
 				}
@@ -325,19 +324,19 @@ class Scheduler{
 		calcAnalytics(doneQ);
 	}
 
-	void nonpreprior(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
+	static void nonpreprior(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
 
 	}
 
-	void preprior(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
+	static void preprior(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
 
 	}
 
-	void rr(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
+	static void rr(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
 
 	}
 
-	void custom(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
+	static void custom(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
 
 	}
 }

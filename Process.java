@@ -5,7 +5,7 @@ public class Process{
 	int arrival_time;
 	int priority;
 	int finishTime;
-	int responceTime;
+	int responseTime;
 	int runTime;
 
 	/**Constructor for Process*/
@@ -15,7 +15,7 @@ public class Process{
 		runTime = burst_time; //burst_time will decrement as the program runs.  Need a variable to keep track of the original total run time
 		this.arrival_time = arrival_time;
 		this.priority = priority;
-		responceTime = -1; //flag to show that it has not yet been set
+		responseTime = -1; //flag to show that it has not yet been set
 	}
 
 
