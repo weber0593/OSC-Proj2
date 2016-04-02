@@ -228,8 +228,101 @@ class Scheduler{
 		calcAnalytics(doneQ);
 	}
 
-	void srtf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
+	void srtf(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ){
+		//main execution loop for srtf
+		while(waitingQ.size() != 0 && readyQ.size() != 0 && running!=null){ //loop until there is nothing in waiting, ready, or running
+			boolean flag = false;
+			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
+			for(int i=0; i<numProcesses; i++){
+				if(waitingQ.get(i).arrival_time == time){
+					readyQ.add(waitingQ.get(i));
+					if(running != null) //if there is a new job with shorter time remaining than what is in running
+						if(waitingQ(i).burst_time < running.burst_time){
+							flag = true; //trigger replacement flag
+						}
+				}
+			}
 
+			//if nothing in running, add shortest job in ready
+			if(running==null){
+				
+				//get job with shortest time
+				int shortestTime = readyQ.get(0).burst_time;
+				int index = 0;
+				for(int i =0; i<readyQ.size(); i++){
+					if(readyQ.get(i).burst_time < shortestTime){
+						shortestTime = readyQ.get(i).burst_time;
+						index = i;
+					}
+				}
+				running=readyQ.get(index);
+				if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+					running.responseTime = time;
+				readyQ.remove(index); //remove that element from readyQ
+			}
+
+			//if flag is true need to replace what's in running with new, shorter job
+			else if(flag){
+				int shortestTime = running.burst_time;
+				int index =0;
+				//get job with shortest time
+				for(int i=0; i<readyQ.size(); i++){
+					if(readyQ.get(i).burst_time < shortestTime){
+						shortestTime = readyQ.get(i).burst_time;
+						index =i;
+					}
+				}
+				readyQ.add(running); //put running back into readyQ
+				running = readyQ.get(index); //add new shortest job to running
+				if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+					running.responseTime = time;
+				readyQ.remove(index); //remove that element from readyQ
+			}
+
+			//else check if process in runnning is done
+			else if(running.burst_time == 0){
+				//in this case whatever was running just finished
+				running.finishTime = time; //set the finish time of the process to now
+				//if there is something left to run
+				if(readyQ.get(0)!=null){
+					doneQ.add(running); //process finished, add to doneQ
+					
+					//add shortest job
+					int shortestTime = readyQ.get(0).burst_time;
+					int index = 0;
+					for(int i =0; i<readyQ.size(); i++){
+						if(readyQ.get(i).burst_time < shortestTime){
+							shortestTime = readyQ.get(i).burst_time;
+							index = i;
+						}
+					}
+					running=readyQ.get(index);
+					if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+						running.responseTime = time;
+					readyQ.remove(0);//remove that element from readyQ
+				}
+
+				//there is nothing more to run right now
+				else{ 
+					doneQ.add(running); //process finished, add to doneQ
+					running=null;
+				}
+			}
+
+			//else something is running and not done
+			else{
+				running.burst_time--;
+			}
+
+			//print status on whats running
+			if(running!=null){
+				System.out.println("Currently running process: "+ running.pid +".  Time: "+time);
+			}
+
+			time++;
+		}
+
+		calcAnalytics(doneQ);
 	}
 
 	void nonpreprior(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ){
