@@ -56,10 +56,10 @@ class Scheduler{
 			read.useDelimiter(",|\\n");
 
 			while(read.hasNext()){
-				pid = read.nextInt();
-				burst_time = read.nextInt();
-				arrival_time = read.nextInt();
-				priority = read.nextInt();
+				pid = Integer.parseInt(read.next().substring(0));
+				burst_time = Integer.parseInt(read.next().substring(1));
+				arrival_time = Integer.parseInt(read.next().substring(1));
+				priority = Integer.parseInt(read.next().substring(1));
 				Process p = new Process(pid, burst_time, arrival_time, priority);
 				waitingQ.add(p);
 			}
