@@ -210,7 +210,7 @@ class Scheduler{
 					running=readyQ.get(index);
 					if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
 						running.responseTime = time;
-					readyQ.remove(0);//remove that element from readyQ
+					readyQ.remove(index);//remove that element from readyQ
 				}
 
 				//there is nothing more to run right now
@@ -220,13 +220,10 @@ class Scheduler{
 				}
 			}
 
-			//else something is running and not done
-			else{
-				running.burst_time--;
-			}
-
-			//print status on whats running
+			//if something is running
 			if(running!=null){
+				running.burst_time--;
+				//print status on whats running
 				System.out.println("Currently running process: "+ running.pid +".  Time: "+time);
 			}
 
@@ -313,7 +310,7 @@ class Scheduler{
 					running=readyQ.get(index);
 					if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
 						running.responseTime = time;
-					readyQ.remove(0);//remove that element from readyQ
+					readyQ.remove(index);//remove that element from readyQ
 				}
 
 				//there is nothing more to run right now
@@ -323,13 +320,10 @@ class Scheduler{
 				}
 			}
 
-			//else something is running and not done
-			else{
-				running.burst_time--;
-			}
-
-			//print status on whats running
+			//if something is running
 			if(running!=null){
+				running.burst_time--;
+				//print status on whats running
 				System.out.println("Currently running process: "+ running.pid +".  Time: "+time);
 			}
 
@@ -348,10 +342,151 @@ class Scheduler{
 	}
 
 	static void rr(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
+		//main execution loop for fcfs
+		int quanta = 2;
+		int runStartTime =0;
+		
+		while(waitingQ.size() != 0 || readyQ.size() != 0 || running!=null){ //loop until there is nothing in waiting, ready, or running
+			
+			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
+			int i=0;
+			while(i<waitingQ.size()){
+				if(waitingQ.get(i).arrival_time == time){
+					readyQ.add(waitingQ.get(i));
+					waitingQ.remove(i);
+					
+				}
+				else{
+					i++;
+				}
+			}
+
+			//check if running is empty
+			if(running==null){
+				//if so add the first element of readyQ to running;
+				running = readyQ.get(0);
+				runStartTime =time;
+				if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+					running.responseTime = time;
+				readyQ.remove(0);//remove that element from readyQ
+			}
+
+			//else check if process is done
+			else if(running.burst_time == 0){
+				//in this case whatever was running just finished
+				running.finishTime = time; //set the finish time of the process to now
+				//if there is something left to run
+				if(!readyQ.isEmpty()){
+					doneQ.add(running); //process finished, add to doneQ
+					running= readyQ.get(0);
+					runStartTime =time;
+					if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+						running.responseTime = time;
+					readyQ.remove(0);//remove that element from readyQ
+				}
+				//there is nothing more to run right now
+				else{ 
+					doneQ.add(running); //process finished, add to doneQ
+					running=null;
+				}
+			}
+
+			//if quanta is over
+			else if((time - runStartTime)%quanta==0){
+				readyQ.add(running);
+				running = readyQ.get(0); //swap with next member in readyQ;
+				runStartTime =time;
+				if(running.responseTime==-1)
+					running.responseTime=time;
+				readyQ.remove(0);
+			}
+
+			//if something is still running
+			if(running!=null){ 
+				running.burst_time--; //take one more second off time remaining
+				System.out.println("Currently running process: "+ running.pid +".  Time: "+time);
+			}
+
+			time++; //increment time
+			
+		}
+		calcAnalytics(doneQ);
 
 	}
 
 	static void custom(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
+		//main execution loop for fcfs
+		int runningQuanta = 0;
+		int runStartTime =0;
+		
+		while(waitingQ.size() != 0 || readyQ.size() != 0 || running!=null){ //loop until there is nothing in waiting, ready, or running
+			
+			//for all elements of waitingQ check if arrivial time matches current time if so add to readyQ
+			int i=0;
+			while(i<waitingQ.size()){
+				if(waitingQ.get(i).arrival_time == time){
+					readyQ.add(waitingQ.get(i));
+					waitingQ.remove(i);
+					
+				}
+				else{
+					i++;
+				}
+			}
+
+			//check if running is empty
+			if(running==null){
+				//if so add the first element of readyQ to running;
+				running = readyQ.get(0);
+				runningQuanta = running.priority;
+				runStartTime = time;
+				if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+					running.responseTime = time;
+				readyQ.remove(0);//remove that element from readyQ
+			}
+
+			//else check if process is done
+			else if(running.burst_time == 0){
+				//in this case whatever was running just finished
+				running.finishTime = time; //set the finish time of the process to now
+				//if there is something left to run
+				if(!readyQ.isEmpty()){
+					doneQ.add(running); //process finished, add to doneQ
+					running= readyQ.get(0);
+					runningQuanta = running.priority;
+					runStartTime=time;
+					if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+						running.responseTime = time;
+					readyQ.remove(0);//remove that element from readyQ
+				}
+				//there is nothing more to run right now
+				else{ 
+					doneQ.add(running); //process finished, add to doneQ
+					running=null;
+				}
+			}
+
+			//if quanta is over
+			else if((time - runStartTime)%runningQuanta==0){
+				readyQ.add(running);
+				running = readyQ.get(0); //swap with next member in readyQ;
+				runningQuanta = running.priority;
+				runStartTime=time;
+				if(running.responseTime==-1)
+					running.responseTime=time;
+				readyQ.remove(0);
+			}
+
+			//if something is still running
+			if(running!=null){ 
+				running.burst_time--; //take one more second off time remaining
+				System.out.println("Currently running process: "+ running.pid +".  Time: "+time);
+			}
+
+			time++; //increment time
+			
+		}
+		calcAnalytics(doneQ);
 
 	}
 }
