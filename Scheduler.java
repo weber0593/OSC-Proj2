@@ -53,7 +53,7 @@ class Scheduler{
 		int pid, burst_time, arrival_time, priority;
 		try{
 			Scanner read = new Scanner(f);
-			read.useDelimiter(",|\\n");
+			read.useDelimiter("(, *)|\\n");	// matches a comma and zero or more spaces, or a newline.
 
 			while(read.hasNext()){
 				pid = Integer.parseInt(read.next().substring(0));
@@ -334,11 +334,183 @@ class Scheduler{
 	}
 
 	static void nonpreprior(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
+	
+		double aging_coef = 0.5;
+		
+		//main execution loop for nonpreprior
+		while(waitingQ.size() != 0 || readyQ.size() != 0 || running!=null){ //loop until there is nothing in waiting, ready, or running
+			
+			//for all elements of waitingQ, check if arrival time matches current time. If so, add to readyQ
+			int i=0;
+			while(i<waitingQ.size()){
+				if(waitingQ.get(i).arrival_time == time){
+					readyQ.add(waitingQ.get(i));
+					waitingQ.remove(i);
+				}
+				else{
+					i++;
+				}
+			}
 
+			//if nothing in running, add job with highest priority (adjusted for aging)
+			if(running==null){
+				//get job with highest priority+age
+				double highest_priority = readyQ.get(0).priority + aging_coef * (time - readyQ.get(0).arrival_time);
+				int index = 0;
+				for(int j =0; j<readyQ.size(); j++){
+					if(readyQ.get(j).priority + aging_coef * (time - readyQ.get(j).arrival_time) > highest_priority){
+						highest_priority = readyQ.get(j).priority + aging_coef * (time - readyQ.get(j).arrival_time);
+						index = j;
+					}
+				}
+				running=readyQ.get(index);
+				if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+					running.responseTime = time;
+				readyQ.remove(index); //remove that element from readyQ
+			}
+			//else check if process in runnning is done
+			else if(running.burst_time == 0){
+			
+				//in this case whatever was running just finished
+				running.finishTime = time; //set the finish time of the process to now
+				//if there is something left to run
+				if(!readyQ.isEmpty()){
+					doneQ.add(running); //process finished, add to doneQ
+					
+					//get job with highest priority+age
+					double highest_priority = readyQ.get(0).priority + aging_coef * (time - readyQ.get(0).arrival_time);
+					int index = 0;
+					for(int j =0; j<readyQ.size(); j++){
+						if(readyQ.get(j).priority + aging_coef * (time - readyQ.get(j).arrival_time) > highest_priority){
+							highest_priority = readyQ.get(j).priority + aging_coef * (time - readyQ.get(j).arrival_time);
+							index = j;
+						}
+					}
+					running=readyQ.get(index);
+					if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+						running.responseTime = time;
+					readyQ.remove(index);//remove that element from readyQ
+				}
+
+				//there is nothing more to run right now
+				else{ 
+					doneQ.add(running); //process finished, add to doneQ
+					running=null;
+				}
+			}
+
+			//print status on what's running
+			if(running!=null){
+				running.burst_time--;
+				System.out.println("Currently running process: "+ running.pid +".  Time: "+time);
+			}
+
+			time++;
+		}
+
+		calcAnalytics(doneQ);
 	}
 
 	static void preprior(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
+		
+		double aging_coef = 0.0;	// how much the effective priority of a process increases each cycle.
+		
+		//main execution loop for preprior
+		while(waitingQ.size() != 0 || readyQ.size() != 0 || running!=null){ //loop until there is nothing in waiting, ready, or running
+			
+			boolean should_swap = false;
+			
+			//for all elements of waitingQ, check if arrival time matches current time. If so, add to readyQ
+			int i=0;
+			while(i<waitingQ.size()){
+				if(waitingQ.get(i).arrival_time == time){
+					readyQ.add(waitingQ.get(i));
+					if(running != null){ //if there is a new job with higher priority+aging than what is in running
+						if(waitingQ.get(i).priority > running.priority + aging_coef * (time - running.arrival_time)){
+							should_swap = true; //trigger replacement flag
+						}
+					}
+					waitingQ.remove(i);
+				}
+				else{
+					i++;
+				}
+			}
 
+			//if nothing in running, add job with highest priority (adjusted for aging)
+			if(running==null){
+				//System.out.println("Nothing running. Looking for process to run.");
+				//get job with highest priority+age
+				double highest_priority = readyQ.get(0).priority + aging_coef * (time - readyQ.get(0).arrival_time);
+				int index = 0;
+				for(int j =0; j<readyQ.size(); j++){
+					if(readyQ.get(j).priority + aging_coef * (time - readyQ.get(j).arrival_time) > highest_priority){
+						highest_priority = readyQ.get(j).priority + aging_coef * (time - readyQ.get(j).arrival_time);
+						index = j;
+					}
+				}
+				running=readyQ.get(index);
+				if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+					running.responseTime = time;
+				readyQ.remove(index); //remove that element from readyQ
+			}
+			//else check if process in running is done
+			else if(running.burst_time == 0){
+			
+				//in this case whatever was running just finished
+				running.finishTime = time; //set the finish time of the process to now
+				//if there is something left to run
+				if(!readyQ.isEmpty()){
+					doneQ.add(running); //process finished, add to doneQ
+					
+					//get job with highest priority+age
+					double highest_priority = readyQ.get(0).priority + aging_coef * (time - readyQ.get(0).arrival_time);
+					int index = 0;
+					for(int j =0; j<readyQ.size(); j++){
+						if(readyQ.get(j).priority + aging_coef * (time - readyQ.get(j).arrival_time) > highest_priority){
+							highest_priority = readyQ.get(j).priority + aging_coef * (time - readyQ.get(j).arrival_time);
+							index = j;
+						}
+					}
+					running=readyQ.get(index);
+					if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+						running.responseTime = time;
+					readyQ.remove(index);//remove that element from readyQ
+				}
+
+				//there is nothing more to run right now
+				else{ 
+					doneQ.add(running); //process finished, add to doneQ
+					running=null;
+				}
+			}
+			else if(should_swap)	{
+				//get job with highest priority+age
+				double highest_priority = readyQ.get(0).priority + aging_coef * (time - readyQ.get(0).arrival_time);
+				int index = 0;
+				for(int j =0; j<readyQ.size(); j++){
+					if(readyQ.get(j).priority + aging_coef * (time - readyQ.get(j).arrival_time) > highest_priority){
+						highest_priority = readyQ.get(j).priority + aging_coef * (time - readyQ.get(j).arrival_time);
+						index = j;
+					}
+				}
+				readyQ.add(running); //put running back into readyQ
+				running = readyQ.get(index); //add new job to running
+				if(running.responseTime == -1) //if response time hasnt been set yet (first time running)
+					running.responseTime = time;
+				readyQ.remove(index); //remove that element from readyQ
+			}
+
+			//print status on what's running
+			if(running!=null){
+				running.burst_time--;
+				System.out.println("Currently running process: "+ running.pid +".  Time: "+time);
+			}
+
+			time++;
+		}
+
+		calcAnalytics(doneQ);
 	}
 
 	static void rr(int time, ArrayList<Process> readyQ, ArrayList<Process> waitingQ, ArrayList<Process> doneQ, Process running){
